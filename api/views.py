@@ -1,5 +1,3 @@
-import json
-
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from api import serializer
@@ -57,9 +55,6 @@ def ApiOverview(request):
 def add_items(request):
     order = OrderSerializer(data=request.data)
 
-    if order.objects.filter(**request.data).exists():
-        raise serializer.ValidationError('This data already exists')
-
     if order.is_valid():
         order.save()
         return Response(order.data)
@@ -69,7 +64,6 @@ def add_items(request):
 
 @api_view(['PUT'])
 def update_items(request, pk):
-    # queryset = Order.objects.all()
     orders = Order.objects.get(pk=pk)
     data = OrderSerializer(instance=orders, data=request.data)
 
@@ -79,6 +73,17 @@ def update_items(request, pk):
     else:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+
+@api_view(['PUT'])
+def update_items_status(request, pk):
+    orders = Order.objects.get(pk=pk)
+    data = OrderSerializer(instance=orders, data=request.data)
+
+    if data.is_valid():
+        data.save()
+        return Response(request.data)
+    else:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['DELETE'])
 def delete_items(request, pk):
