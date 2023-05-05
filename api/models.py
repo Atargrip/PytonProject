@@ -1,5 +1,6 @@
 from django.db import models
 from .status_choices import StatusChoice
+from django.contrib.auth.models import User
 
 
 class TradingPoint(models.Model):
@@ -17,6 +18,7 @@ class Employee(models.Model):
 
 
 class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     customer = models.ForeignKey('Orderer', on_delete=models.CASCADE, blank=True, null=True)
     store = models.ForeignKey('TradingPoint', on_delete=models.CASCADE, blank=True, null=True)
     employee = models.ForeignKey('Employee', on_delete=models.CASCADE, null=True, blank=True)
@@ -25,9 +27,16 @@ class Order(models.Model):
     updated_at = models.DateTimeField()
 
 
-
 class Orderer(models.Model):
     name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=255)
     trading_points = models.ForeignKey('TradingPoint', on_delete=models.CASCADE, null=True, blank=True)
 
+
+class Visit(models.Model):
+    # id = models.UUIDField()
+    createTime = models.DateTimeField()
+    performer = models.ForeignKey('Employee', on_delete=models.CASCADE, blank=True, null=False)
+    order = models.ForeignKey('Order', on_delete=models.CASCADE, blank=True, null=False)
+    author = models.ForeignKey('Orderer', on_delete=models.CASCADE, blank=True, null=False)
+    where = models.ForeignKey('TradingPoint', on_delete=models.CASCADE, blank=True, null=False)

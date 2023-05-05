@@ -1,14 +1,13 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, mixins
 from api import serializer
 from django.contrib.auth.models import User
-from .models import TradingPoint, Order
+from .models import TradingPoint, Order, Visit
 from .serializer import OrderSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializer import TradePointsSerializer
-from rest_framework.decorators import api_view
-
+from .serializer import TradePointsSerializer, VisitSerializer
+from rest_framework.decorators import api_view, action
 
 class UserList(generics.ListAPIView):
     queryset = User.objects.all()
@@ -85,6 +84,7 @@ def update_items_status(request, pk):
     else:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+
 @api_view(['DELETE'])
 def delete_items(request, pk):
     order = get_object_or_404(Order, pk=pk)
@@ -94,13 +94,11 @@ def delete_items(request, pk):
 
 @api_view(['GET'])
 def view_items(request):
-    # checking for the parameters from the URL
     if request.query_params:
         orders = Order.objects.filter(**request.query_params.dict())
     else:
         orders = Order.objects.all()
 
-    # if there is something in items else raise error
     if orders:
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data)
@@ -115,3 +113,50 @@ class OrderList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user.orderer)
+
+
+class ListVisits(APIView):
+    def get(self, request):
+        query = Visit.objects.all()
+        serializer_class = VisitSerializer(query, many=True)
+        return Response(serializer_class.data)
+
+class ListVisitMixin(mixins.ListModelMixin, generics.GenericAPIView):
+    queryset = Visit.objects.all()
+    serializer_class = VisitSerializer
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+class DetailedVisitMixins(mixins.RetrieveModelMixin,
+                          mixins.UpdateModelMixin,
+                          mixins.CreateModelMixin,
+                          mixins.DestroyModelMixin,
+                          generics.GenericAPIView):
+
+    queryset = Visit.objects.all()
+    serializer_class = VisitSerializer
+
+
+    def get_serializer_class(self):
+        serializer_class = self.serializer_class
+
+        if action == 'create':
+            serializer_class = VisitSerializer
+
+        return serializer_class
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        serializers = self.get_serializer(data=request.data)
+        serializers.is_valid(raise_exception=True)
+        serializers.save()
+        return Response(data={"results": request.data}, status=status.HTTP_201_CREATED)
+        # return self.create(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.delete(request, *args, **kwargs)
