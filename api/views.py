@@ -75,15 +75,18 @@ def update_items(request, pk):
 
 @api_view(['PUT'])
 def update_items_status(request, pk):
-    orders = Order.objects.get(pk=pk)
-    data = OrderSerializer(instance=orders, data=request.data)
-
-    if data.is_valid():
-        data.save()
-        return Response(request.data)
-    else:
+    try:
+        order = Order.objects.get(pk=pk)
+    except Order.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+    serializer = OrderSerializer(instance=order, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        status_data = {'status': serializer.validated_data['status']}
+        return Response(status_data)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 def delete_items(request, pk):

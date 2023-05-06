@@ -11,4 +11,5 @@ urlpatterns = [
     path('details/<int:pk>', views.DetailedVisitMixins.as_view()),
     path('update/<int:pk>/', views.update_items, name='update-items'),
     path('order/<int:pk>/delete/', views.delete_items, name='delete-items'),
+    path('order/<int:pk>/status', views.update_items_status)
 ]
