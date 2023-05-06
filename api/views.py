@@ -121,11 +121,13 @@ class ListVisits(APIView):
         serializer_class = VisitSerializer(query, many=True)
         return Response(serializer_class.data)
 
+
 class ListVisitMixin(mixins.ListModelMixin, generics.GenericAPIView):
     queryset = Visit.objects.all()
     serializer_class = VisitSerializer
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
+
 
 class DetailedVisitMixins(mixins.RetrieveModelMixin,
                           mixins.UpdateModelMixin,
@@ -135,7 +137,6 @@ class DetailedVisitMixins(mixins.RetrieveModelMixin,
 
     queryset = Visit.objects.all()
     serializer_class = VisitSerializer
-
 
     def get_serializer_class(self):
         serializer_class = self.serializer_class

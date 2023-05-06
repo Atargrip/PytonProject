@@ -2,9 +2,8 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from rest_framework.templatetags.rest_framework import data
-
-from .models import TradingPoint, Employee, Order, Visit
+from .models import TradingPoint, Employee, Order, Visit, Orderer
+import json
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,6 +30,10 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = '__all__'
 
+class OrdererSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = '__all__'
 
 class VisitListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,17 +52,22 @@ class VisitSerializer(serializers.ModelSerializer):
         model = Visit
         fields = '__all__'
 
-    def validate(self, attrs):
+    def validate(self, data):
 
-        orderer = attrs.get('orderer')
-        trade_point_id = attrs.get('trade_point_id')
-        created_time = attrs.get('createTime')
+        orderer = data.get('author')
 
-        visitorder = Visit.objects.filter(where_id=trade_point_id, author_id=orderer).first()
-        if not isinstance(visitorder, Visit) or created_time > timezone.now().time():
-            raise serializers.ValidationError(str(trade_point_id) + '\nНевозможно создать посещение для этого заказа ' + str(orderer))
-        return attrs
+        trade_point = data.get('where')
+        created_time = data.get('createTime')
+        order = data.get('order')
+        employee = data.get('performer')
 
+        if orderer.trading_points_id != trade_point.id or order.updated_at < created_time:
+            raise serializers.ValidationError("Вы не можете создовать посешение" + str(json.dumps(data, indent=4, sort_keys=True, default=str)))
+        elif Visit.objects.filter(order=order).exists():
+            raise serializers.ValidationError("Посешение уже существует")
+        elif employee.id != order.employee.id:
+            raise serializers.ValidationError(" Этот работник не привязан к заказу")
+        return data
 
     def create(self, validated_data):
         order = validated_data.get('order')
